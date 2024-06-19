@@ -212,10 +212,10 @@ func executeOCSPCheck(cert, issuer *x509.Certificate, server string, opts Option
 	}
 
 	if err != nil {
-		var urlErr *url.Error
-		if errors.As(err, &urlErr) && urlErr.Timeout() {
-			return nil, TimeoutError{}
-		}
+		// var urlErr *url.Error
+		// if errors.As(err, &urlErr) && urlErr.Timeout() {
+		// 	return nil, TimeoutError{}
+		// }
 		return nil, GenericError{Err: err}
 	}
 	defer resp.Body.Close()

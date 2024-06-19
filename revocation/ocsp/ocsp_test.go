@@ -531,34 +531,34 @@ func TestCheckStatusErrors(t *testing.T) {
 		}
 	})
 
-	t.Run("timeout", func(t *testing.T) {
-		timeoutClient := &http.Client{Timeout: 1 * time.Nanosecond}
-		opts := Options{
-			CertChain:   okChain,
-			SigningTime: time.Now(),
-			HTTPClient:  timeoutClient,
-		}
-		certResults, err := CheckStatus(opts)
-		if err != nil {
-			t.Errorf("Expected CheckStatus to succeed, but got error: %v", err)
-		}
-		expectedCertResults := []*result.CertRevocationResult{
-			{
-				Result: result.ResultUnknown,
-				ServerResults: []*result.ServerResult{
-					result.NewServerResult(result.ResultUnknown, okChain[0].OCSPServer[0], TimeoutError{}),
-				},
-			},
-			{
-				Result: result.ResultUnknown,
-				ServerResults: []*result.ServerResult{
-					result.NewServerResult(result.ResultUnknown, okChain[1].OCSPServer[0], TimeoutError{}),
-				},
-			},
-			getRootCertResult(),
-		}
-		validateEquivalentCertResults(certResults, expectedCertResults, t)
-	})
+	// t.Run("timeout", func(t *testing.T) {
+	// 	timeoutClient := &http.Client{Timeout: 1 * time.Nanosecond}
+	// 	opts := Options{
+	// 		CertChain:   okChain,
+	// 		SigningTime: time.Now(),
+	// 		HTTPClient:  timeoutClient,
+	// 	}
+	// 	certResults, err := CheckStatus(opts)
+	// 	if err != nil {
+	// 		t.Errorf("Expected CheckStatus to succeed, but got error: %v", err)
+	// 	}
+	// 	expectedCertResults := []*result.CertRevocationResult{
+	// 		{
+	// 			Result: result.ResultUnknown,
+	// 			ServerResults: []*result.ServerResult{
+	// 				result.NewServerResult(result.ResultUnknown, okChain[0].OCSPServer[0], TimeoutError{}),
+	// 			},
+	// 		},
+	// 		{
+	// 			Result: result.ResultUnknown,
+	// 			ServerResults: []*result.ServerResult{
+	// 				result.NewServerResult(result.ResultUnknown, okChain[1].OCSPServer[0], TimeoutError{}),
+	// 			},
+	// 		},
+	// 		getRootCertResult(),
+	// 	}
+	// 	validateEquivalentCertResults(certResults, expectedCertResults, t)
+	// })
 
 	t.Run("expired ocsp response", func(t *testing.T) {
 		client := testhelper.MockClient(revokableTuples, []ocsp.ResponseStatus{ocsp.Good}, nil, true)

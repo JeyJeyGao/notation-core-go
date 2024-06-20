@@ -22,6 +22,7 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/base64"
+	"encoding/pem"
 	"errors"
 	"fmt"
 	"io"
@@ -94,6 +95,11 @@ func CheckStatus(opts Options) ([]*result.CertRevocationResult, error) {
 }
 
 func certCheckStatus(cert, issuer *x509.Certificate, opts Options) *result.CertRevocationResult {
+	fmt.Println("====Start of Revocation Debug====")
+	fmt.Println("Certificate:")
+	fmt.Println(string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: cert.Raw})))
+	fmt.Println("Issuer:")
+	fmt.Println(string(pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: issuer.Raw})))
 	ocspURLs := cert.OCSPServer
 	if len(ocspURLs) == 0 {
 		// OCSP not enabled for this certificate.
@@ -128,6 +134,7 @@ func checkStatusFromServer(cert, issuer *x509.Certificate, server string, opts O
 
 	// Create OCSP Request
 	resp, err := executeOCSPCheck(cert, issuer, server, opts)
+	fmt.Println("OCSP Parsing Err: ", err)
 	if err != nil {
 		// If there is a server error, attempt all servers before determining what to return
 		// to the user
@@ -135,6 +142,7 @@ func checkStatusFromServer(cert, issuer *x509.Certificate, server string, opts O
 	}
 
 	// Validate OCSP response isn't expired
+	fmt.Println("OCSP Response NextUpdate: ", resp.NextUpdate)
 	if time.Now().After(resp.NextUpdate) {
 		return toServerResult(server, GenericError{Err: errors.New("expired OCSP response")})
 	}
@@ -157,6 +165,7 @@ func checkStatusFromServer(cert, issuer *x509.Certificate, server string, opts O
 		}
 	}
 
+	fmt.Println("Certificate Response Status: ", resp.Status)
 	// No errors, valid server response
 	switch resp.Status {
 	case ocsp.Good:
@@ -192,6 +201,7 @@ func executeOCSPCheck(cert, issuer *x509.Certificate, server string, opts Option
 	if err != nil {
 		return nil, GenericError{Err: err}
 	}
+	fmt.Println("OCSP RAW Request: ", base64.StdEncoding.EncodeToString(ocspRequest))
 
 	var resp *http.Response
 	postRequired := base64.StdEncoding.EncodedLen(len(ocspRequest)) >= 255
@@ -210,7 +220,7 @@ func executeOCSPCheck(cert, issuer *x509.Certificate, server string, opts Option
 	} else {
 		resp, err = postRequest(ocspRequest, server, opts.HTTPClient)
 	}
-
+	fmt.Println("OCSP Request Err: ", err)
 	if err != nil {
 		// var urlErr *url.Error
 		// if errors.As(err, &urlErr) && urlErr.Timeout() {
@@ -220,6 +230,7 @@ func executeOCSPCheck(cert, issuer *x509.Certificate, server string, opts Option
 	}
 	defer resp.Body.Close()
 
+	fmt.Println("OCSP Response Status Code: ", resp.StatusCode)
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		return nil, fmt.Errorf("failed to retrieve OCSP: response had status code %d", resp.StatusCode)
 	}
@@ -229,6 +240,7 @@ func executeOCSPCheck(cert, issuer *x509.Certificate, server string, opts Option
 		return nil, GenericError{Err: err}
 	}
 
+	fmt.Println("OCSP RAW Response: ", base64.StdEncoding.EncodeToString(body))
 	switch {
 	case bytes.Equal(body, ocsp.UnauthorizedErrorResponse):
 		return nil, GenericError{Err: errors.New("OCSP unauthorized")}
@@ -242,6 +254,7 @@ func executeOCSPCheck(cert, issuer *x509.Certificate, server string, opts Option
 		return nil, GenericError{Err: errors.New("OCSP signature required")}
 	}
 
+	fmt.Println("Parsing OCSP Response...")
 	return ocsp.ParseResponseForCert(body, cert, issuer)
 }
 

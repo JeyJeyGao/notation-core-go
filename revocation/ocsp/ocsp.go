@@ -222,10 +222,11 @@ func executeOCSPCheck(cert, issuer *x509.Certificate, server string, opts Option
 	}
 	fmt.Println("OCSP Request Err: ", err)
 	if err != nil {
-		// var urlErr *url.Error
-		// if errors.As(err, &urlErr) && urlErr.Timeout() {
-		// 	return nil, TimeoutError{}
-		// }
+		fmt.Println("OCSP Request inner Err: ", err.Error())
+		var urlErr *url.Error
+		if errors.As(err, &urlErr) && urlErr.Timeout() {
+			return nil, TimeoutError{}
+		}
 		return nil, GenericError{Err: err}
 	}
 	defer resp.Body.Close()

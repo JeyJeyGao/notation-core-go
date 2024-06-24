@@ -197,6 +197,8 @@ func executeOCSPCheck(cert, issuer *x509.Certificate, server string, opts Option
 	// As this represents a large percentage of public CAs, we are using the
 	// hashing algorithm SHA1, which has been confirmed to be supported by all
 	// that were tested.
+	startTime := time.Now()
+
 	ocspRequest, err := ocsp.CreateRequest(cert, issuer, &ocsp.RequestOptions{Hash: crypto.SHA1})
 	if err != nil {
 		return nil, GenericError{Err: err}
@@ -220,6 +222,8 @@ func executeOCSPCheck(cert, issuer *x509.Certificate, server string, opts Option
 	} else {
 		resp, err = postRequest(ocspRequest, server, opts.HTTPClient)
 	}
+
+	fmt.Println("OCSP Request Time: ", time.Since(startTime).Seconds())
 	fmt.Println("OCSP Request Err: ", err)
 	if err != nil {
 		fmt.Println("OCSP Request inner Err: ", err.Error())
@@ -256,7 +260,7 @@ func executeOCSPCheck(cert, issuer *x509.Certificate, server string, opts Option
 	}
 
 	fmt.Println("Parsing OCSP Response...")
-	return ocsp.ParseResponseForCert(body, cert, issuer)
+	return ocsp.ParseResponseForCert(body, cert, nil)
 }
 
 func postRequest(req []byte, server string, httpClient *http.Client) (*http.Response, error) {

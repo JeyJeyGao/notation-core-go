@@ -1,27 +1,22 @@
 package cache
 
 import (
-	"io"
+	"context"
 )
 
-// Cache is an interface to store the content
+// Cache is an interface that specifies methods used for caching
 type Cache interface {
 	// Get retrieves the content with the given key
 	//
 	// if the key does not exist, return os.ErrNotExist
-	Get(key string) (io.ReadCloser, error)
+	Get(ctx context.Context, key string) (any, error)
 
 	// Set stores the content with the given key
-	Set(key string) (WriteCanceler, error)
-
-	// List returns the list of keys
-	List() ([]string, error)
+	Set(ctx context.Context, key string, value any) error
 
 	// Delete removes the content with the given key
-	Delete(key string) error
-}
+	Delete(ctx context.Context, key string) error
 
-type WriteCanceler interface {
-	io.WriteCloser
-	Cancel()
+	// Clear removes all content
+	Clear(ctx context.Context) error
 }
